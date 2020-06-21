@@ -77,13 +77,15 @@ provider:
 functions:
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
+  Auth2:
+    handler: src/lambda/auth/auth0Authorizer2.handler
   GetTodos:
     handler: src/lambda/http/getTodos.handler
     events:
       - http:
           method: get
           path: todos
-          authorizer: Auth
+          authorizer: Auth2
           cors: true
   DeleteTodo:
     handler: src/lambda/http/deleteTodo.handler
@@ -91,7 +93,7 @@ functions:
       - http:
           method: delete
           path: todos/{todoId}
-          authorizer: Auth
+          authorizer: Auth2
           cors: true
   CreateTodo:
     handler: src/lambda/http/createTodo.handler
@@ -99,7 +101,7 @@ functions:
       - http:
           method: post
           path: todos
-          authorizer: Auth
+          authorizer: Auth2
           cors: true
           reqValidatorName: RequestBodyValidator
           documentation:
@@ -115,7 +117,7 @@ functions:
       - http:
           method: patch
           path: todos/{todoId}
-          authorizer: Auth
+          authorizer: Auth2
           cors: true
           reqValidatorName: RequestBodyValidator
           documentation:
@@ -129,7 +131,7 @@ functions:
       - http:
           method: post
           path: todos/{todoId}/attachment
-          authorizer: Auth
+          authorizer: Auth2
           cors: true
 
 resources:
@@ -146,7 +148,7 @@ resources:
       Type: AWS::ApiGateway::GatewayResponse
       Properties:
         ResponseParameters:
-          gatewayresponse.header.Access-Control-Allow-Origin: "'*''"
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
           gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization'"
           gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS,POST'"
         ResponseType: DEFAULT_4XX

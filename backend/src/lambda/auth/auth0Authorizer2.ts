@@ -1,24 +1,19 @@
-import { CustomAuthorizerEvent, CustomAuthorizerResult } from 'aws-lambda'
-import 'source-map-support/register'
-import * as middy from 'middy'
-import { secretsManager } from 'middy/middlewares'
+import { CustomAuthorizerEvent, CustomAuthorizerResult } from 'aws-lambda';
+import 'source-map-support/register';
+import { AuthHelper } from '../../helpers/authHelper2';
+import { JwtPayload } from '../../auth/JwtPayload2'
 
-import { verify } from 'jsonwebtoken'
-import { JwtToken } from '../../auth/JwtToken'
 
-const secretId = process.env.AUTH_0_SECRET_ID
-const secretField = process.env.AUTH_0_SECRET_FIELD
 
-export const handler = middy(async (event: CustomAuthorizerEvent, context): Promise<CustomAuthorizerResult> => {
+export const handler = async (event: CustomAuthorizerEvent
+): Promise<CustomAuthorizerResult> => {
+
   try {
-    const decodedToken = verifyToken(
-      event.authorizationToken,
-      context.AUTH0_SECRET[secretField]
-    )
-    console.log('User was authorized', decodedToken)
+    const authHeader = event.authorizationToken;
+    const jwtToken = await verifyToken(authHeader);
 
     return {
-      principalId: decodedToken.sub,
+      principalId: jwtToken.sub,
       policyDocument: {
         Version: '2012-10-17',
         Statement: [
@@ -31,7 +26,6 @@ export const handler = middy(async (event: CustomAuthorizerEvent, context): Prom
       }
     }
   } catch (e) {
-    console.log('User was not authorized', e.message)
 
     return {
       principalId: 'user',
@@ -47,31 +41,18 @@ export const handler = middy(async (event: CustomAuthorizerEvent, context): Prom
       }
     }
   }
-})
+};
 
-function verifyToken(authHeader: string, secret: string): JwtToken {
-  if (!authHeader)
-    throw new Error('No authentication headerrrrrr')
-
-  if (!authHeader.toLowerCase().startsWith('bearer '))
-    throw new Error('Invalid authentication headerrrrrr bearer not found')
-
-  const split = authHeader.split(' ')
-  const token = split[1]
-
-  console.log('token:::::',token)
-
-  return verify(token, secret) as JwtToken
-}
-
-handler.use(
-  secretsManager({
-    cache: true,
-    cacheExpiryInMillis: 60000,
-    // Throw an error if can't read the secret
-    throwOnFailedCall: true,
-    secrets: {
-      AUTH0_SECRET: secretId
+const verifyToken = (authHeader: string): Promise<JwtPayload> => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = AuthHelper.getJWTToken(authHeader);
+      const jwt = AuthHelper.decodeJWTToken(token);
+      const signingKey = await AuthHelper.getSigningKey(jwt);
+      const payload = AuthHelper.verifyToken(token, signingKey.getPublicKey());
+      resolve(payload);
+    } catch (error) {
+      reject(error);
     }
-  })
-)
+  });
+};
