@@ -44,8 +44,9 @@ provider:
   apiGateway:
     minimumCompressionSize: 1024 # Enable gzip compression for responses > 1 KB
   environment:
+    APP_NAME: kg3-serverless-todos
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
-    TODO_TABLE: Todos-${self:provider.stage}
+    TODO_TABLE: Todos2-${self:provider.stage}
     IMAGES_BUCKET: kg3-udacity-todos-${self:provider.stage}
     USER_ID_INDEX: userId
   tracing:
@@ -87,6 +88,25 @@ functions:
           path: todos
           authorizer: Auth2
           cors: true
+    iamRoleStatementsName: ${self:provider.environment.APP_NAME}-get-todo-role-${self:provider.stage}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Scan
+          - dynamodb:GetItem
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODO_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODO_TABLE}/index/${self:provider.environment.USER_ID_INDEX}
+      - Effect: Allow 
+        Action:
+          - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
+        Resource:
+          - "*"
+
   DeleteTodo:
     handler: src/lambda/http/deleteTodo.handler
     events:
@@ -95,6 +115,28 @@ functions:
           path: todos/{todoId}
           authorizer: Auth2
           cors: true
+    iamRoleStatementsName: ${self:provider.environment.APP_NAME}-delete-todo-role-${self:provider.stage}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:DeleteItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODO_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODO_TABLE}/index/${self:provider.environment.USER_ID_INDEX}
+      - Effect: Allow
+        Action:
+          - s3:DeleteObject
+        Resource: "arn:aws:s3:::${self:provider.environment.IMAGES_BUCKET}/*"      
+      - Effect: Allow 
+        Action:
+          - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
+        Resource:
+          - "*"
+
   CreateTodo:
     handler: src/lambda/http/createTodo.handler
     events:
@@ -109,6 +151,18 @@ functions:
             description: create new ToDo
             requestModels:
               'application/json': CreateTodo
+    iamRoleStatementsName: ${self:provider.environment.APP_NAME}-create-todo-role-${self:provider.stage}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODO_TABLE}
+      - Effect: Allow 
+        Action:
+          - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
+        Resource:
+          - "*"
           
 
   UpdateTodo:
@@ -125,6 +179,25 @@ functions:
             description: update a ToDo
             requestModels:
               'application/json': UpdateTodo
+    iamRoleStatementsName: ${self:provider.environment.APP_NAME}-update-todo-role-${self:provider.stage}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODO_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODO_TABLE}/index/${self:provider.environment.USER_ID_INDEX}
+      - Effect: Allow 
+        Action:
+          - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
+        Resource:
+          - "*"
+
+
   GenerateUploadUrl:
     handler: src/lambda/http/generateUploadUrl.handler
     events:
@@ -133,6 +206,27 @@ functions:
           path: todos/{todoId}/attachment
           authorizer: Auth2
           cors: true
+    iamRoleStatementsName: ${self:provider.environment.APP_NAME}-s3-todo-upload-role-${self:provider.stage}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODO_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODO_TABLE}/index/${self:provider.environment.USER_ID_INDEX}
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+          - s3:GetObject
+        Resource: "arn:aws:s3:::${self:provider.environment.IMAGES_BUCKET}/*"
+      - Effect: Allow 
+        Action:
+          - xray:PutTraceSegments
+          - xray:PutTelemetryRecords
+        Resource:
+          - "*"
 
 resources:
   Resources:
@@ -163,8 +257,10 @@ resources:
           - AttributeName: userId
             AttributeType: S
         KeySchema:
-          - AttributeName: todoId
+          - AttributeName: userId
             KeyType: HASH
+          - AttributeName: todoId
+            KeyType: RANGE
         GlobalSecondaryIndexes:
           - IndexName: ${self:provider.environment.USER_ID_INDEX}
             KeySchema:
