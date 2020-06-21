@@ -26,6 +26,8 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         return apiResponseHelper.generateErrorResponse(400,'TODO does not belong to authorized user')
     }
     
-    const url = new S3Helper().getPresignedUrl(todoId)
-    return apiResponseHelper.generateDataSuccessResponse(200,"uploadUrl",url)
+    const attachmentUrl = new S3Helper().getPresignedUrl(todoId)
+    //await new TodosAccess().updateTodoWithAttachmentUrl(todoId,userId,attachmentUrl)
+    
+    return apiResponseHelper.generateDataSuccessResponse(200,"uploadUrl",attachmentUrl)
 }

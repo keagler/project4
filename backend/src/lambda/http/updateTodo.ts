@@ -31,7 +31,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
     logger.info(`User ${userId} updating group ${todoId} to be ${updatedTodo}`)
     //await new TodosAccess().updateTodoWithUserId(updatedTodo,todoId,userId)    
-    await new TodosAccess().updateTodoWithAttachmentUrl(todoId,userId)
+    await new TodosAccess().updateTodoWithAttachmentUrl(todoId,userId,'null url')
     return apiResponseHelper.generateEmptySuccessResponse(204)
   
 }

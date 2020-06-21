@@ -84,11 +84,11 @@ export class TodosAccess{
           }).promise()
     }
 
-    async updateTodoWithAttachmentUrl(todoId: string, userId: string): Promise<void> {
+    async updateTodoWithAttachmentUrl(todoId: string, userId: string, attachmentUrl:string): Promise<void> {
         try {
 
             //const attachmentUrl = s3Helper.getTodoAttachmentUrl(todoId)
-            const attachmentUrl = 'kgupdate'
+            //const attachmentUrl = 'kgupdate'
 
             const params: DocumentClient.UpdateItemInput = {
                 TableName: this.todosTable,
@@ -120,17 +120,6 @@ export class TodosAccess{
             Key:{
                 "userId":userId,
                 "todoId":todoId                
-            }
-        }
-      
-         await this.docClient.delete(param).promise()
-    }
-
-    async deleteTodoById(todoId: string){
-        const param = {
-            TableName: this.todosTable,
-            Key:{
-                "todoId":todoId
             }
         }
       
