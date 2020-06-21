@@ -46,31 +46,14 @@ provider:
   environment:
     APP_NAME: kg3-serverless-todos
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
-    TODO_TABLE: Todos2-${self:provider.stage}
+    TODO_TABLE: Todos3-SIL3-${self:provider.stage}
     IMAGES_BUCKET: kg3-udacity-todos-${self:provider.stage}
     USER_ID_INDEX: userId
+    TODOS_INDEX_NAME: TodoIdIndex
   tracing:
     lambda: true
     apiGateway: true
 
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - dynamodb:Scan
-        - dynamodb:PutItem
-        - dynamodb:DeleteItem
-        - dynamodb:UpdateItem
-        - dynamodb:Query
-      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODO_TABLE}
-    - Effect: Allow
-      Action:
-        - s3:PutObject
-        - s3:GetObject
-      Resource: arn:aws:s3:::${self:provider.environment.IMAGES_BUCKET}/*
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODO_TABLE}/index/${self:provider.environment.USER_ID_INDEX}
 
 
 
@@ -244,7 +227,7 @@ resources:
         ResponseParameters:
           gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
           gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization'"
-          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS,POST'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS,POST,DELETE,PUT'"
         ResponseType: DEFAULT_4XX
         RestApiId:
           Ref: 'ApiGatewayRestApi'
@@ -253,6 +236,8 @@ resources:
       Properties:
         AttributeDefinitions:
           - AttributeName: todoId
+            AttributeType: S
+          - AttributeName: createdAt
             AttributeType: S
           - AttributeName: userId
             AttributeType: S
@@ -265,7 +250,9 @@ resources:
           - IndexName: ${self:provider.environment.USER_ID_INDEX}
             KeySchema:
             - AttributeName: userId
-              KeyType: HASH
+              KeyType: HASH     
+            - AttributeName: createdAt
+              KeyType: RANGE 
             Projection:
               ProjectionType: ALL
         BillingMode: PAY_PER_REQUEST
@@ -282,5 +269,7 @@ resources:
                 - GET
                 - POST
                 - PUT
+                - DELETE
+                - HEAD
               AllowedOrigins:
                 - "*"
