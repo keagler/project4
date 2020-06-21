@@ -17,20 +17,21 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     const authHeader = event.headers['Authorization']
     const userId = getUserId(authHeader)
   
-    const item = await todosAccess.getTodoById(todoId)
+    const item = await todosAccess.getTodoByIdWithUserId(todoId,userId)
   
     if(item.Count == 0){
         logger.error(`user ${userId} requesting update for non exists todo with id ${todoId}`)
-        return apiResponseHelper.generateErrorResponse(400,'TODO not exists')
+        return apiResponseHelper.generateErrorResponse(400,'TODO not exists while updating...')
     } 
 
     if(item.Items[0].userId !== userId){
         logger.error(`user ${userId} requesting update todo does not belong to his account with id ${todoId}`)
-        return apiResponseHelper.generateErrorResponse(400,'TODO does not belong to authorized user')
+        return apiResponseHelper.generateErrorResponse(400,'TODO does not belong to authorized user while updating')
     }
 
     logger.info(`User ${userId} updating group ${todoId} to be ${updatedTodo}`)
-    await new TodosAccess().updateTodo(updatedTodo,todoId)
+    //await new TodosAccess().updateTodoWithUserId(updatedTodo,todoId,userId)    
+    await new TodosAccess().updateTodoWithAttachmentUrl(todoId,userId)
     return apiResponseHelper.generateEmptySuccessResponse(204)
   
 }

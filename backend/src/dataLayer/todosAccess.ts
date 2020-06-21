@@ -4,8 +4,11 @@ import { UpdateTodoRequest } from "../requests/updateTodoRequest";
 const uuid = require('uuid/v4')
 import * as AWS from 'aws-sdk'
 import * as AWSXRay from 'aws-xray-sdk'
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import { S3Helper } from '../helpers/s3Helper'
 
 
+const s3Helper = new S3Helper()
 
 export class TodosAccess{
     constructor(
@@ -14,7 +17,9 @@ export class TodosAccess{
         private readonly todosTable = process.env.TODO_TABLE,
         private readonly userIdIndex = process.env.USER_ID_INDEX
     )
-        {}
+    {}
+
+    
 
     async getUserTodos(userId: string): Promise<TodoItem[]>{
         const result = await this.docClient.query({
@@ -37,6 +42,7 @@ export class TodosAccess{
         item.name= request.name
         item.dueDate= request.dueDate
         item.done= false
+        item.attachmentUrl = null
   
         await this.docClient.put({
             TableName: this.todosTable,
@@ -47,20 +53,23 @@ export class TodosAccess{
     }
 
 
-    async getTodoById(id: string): Promise<AWS.DynamoDB.QueryOutput>{
+    async getTodoByIdWithUserId(id: string, userId:string): Promise<AWS.DynamoDB.QueryOutput>{
         return await this.docClient.query({
             TableName: this.todosTable,
-            KeyConditionExpression: 'todoId = :todoId',
+            KeyConditionExpression: 'todoId = :todoId and userId = :userId',
             ExpressionAttributeValues:{
-                ':todoId': id
+                ':todoId': id,
+                ':userId': userId
             }
         }).promise()
     }
 
-    async updateTodo(updatedTodo:UpdateTodoRequest,todoId:string){
+
+    async updateTodoWithUserId(updatedTodo:UpdateTodoRequest,todoId:string,userId:string){
         await this.docClient.update({
             TableName: this.todosTable,
             Key:{
+                'userId':userId,
                 'todoId':todoId
             },
             UpdateExpression: 'set #namefield = :n, dueDate = :d, done = :done',
@@ -73,6 +82,48 @@ export class TodosAccess{
                 "#namefield": "name"
               }
           }).promise()
+    }
+
+    async updateTodoWithAttachmentUrl(todoId: string, userId: string): Promise<void> {
+        try {
+
+            //const attachmentUrl = s3Helper.getTodoAttachmentUrl(todoId)
+            const attachmentUrl = 'kgupdate'
+
+            const params: DocumentClient.UpdateItemInput = {
+                TableName: this.todosTable,
+                Key: {
+                    "userId": userId,
+                    "todoId": todoId
+                    
+                },
+                UpdateExpression: "set #a = :a",
+                ExpressionAttributeNames: {
+                    '#a': 'attachmentUrl'
+                },
+                ExpressionAttributeValues: {
+                    ":a": attachmentUrl
+                }
+            };
+
+            await this.docClient.update(params).promise();
+            return Promise.resolve();
+        } catch (error) {
+            return Promise.reject(error);
+        }
+    };
+
+
+    async deleteTodoByIdAndUserId(todoId: string, userId:string){
+        const param = {
+            TableName: this.todosTable,
+            Key:{
+                "userId":userId,
+                "todoId":todoId                
+            }
+        }
+      
+         await this.docClient.delete(param).promise()
     }
 
     async deleteTodoById(todoId: string){

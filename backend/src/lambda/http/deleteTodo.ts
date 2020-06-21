@@ -18,11 +18,13 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
  
     const authHeader = event.headers['Authorization']
     const userId = getUserId(authHeader)
+    logger.info('userId:::::',userId)
+    console.log('userId:::::',userId)
 
-    const item = await todosAccess.getTodoById(todoId)
+    const item = await todosAccess.getTodoByIdWithUserId(todoId,userId)
     if(item.Count == 0){
         logger.error(`user ${userId} requesting delete for non exists todo with id ${todoId}`)
-        return apiResponseHelper.generateErrorResponse(400,'TODO not exists')
+        return apiResponseHelper.generateErrorResponse(400,'TODO not exists while deleting..')
     }
 
     if(item.Items[0].userId !== userId){
@@ -31,7 +33,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     }
 
     logger.info(`User ${userId} deleting todo ${todoId}`)
-    await todosAccess.deleteTodoById(todoId)
+    await todosAccess.deleteTodoByIdAndUserId(todoId,userId)
     return apiResponseHelper.generateEmptySuccessResponse(204)
 
   

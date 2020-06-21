@@ -46,10 +46,9 @@ provider:
   environment:
     APP_NAME: kg3-serverless-todos
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
-    TODO_TABLE: Todos3-SIL3-${self:provider.stage}
+    TODO_TABLE: Todos5-${self:provider.stage}
     IMAGES_BUCKET: kg3-udacity-todos-${self:provider.stage}
-    USER_ID_INDEX: userId
-    TODOS_INDEX_NAME: TodoIdIndex
+    USER_ID_INDEX: TodoIdIndex
   tracing:
     lambda: true
     apiGateway: true
@@ -235,11 +234,11 @@ resources:
       Type: AWS::DynamoDB::Table
       Properties:
         AttributeDefinitions:
-          - AttributeName: todoId
+          - AttributeName: userId
             AttributeType: S
           - AttributeName: createdAt
             AttributeType: S
-          - AttributeName: userId
+          - AttributeName: todoId
             AttributeType: S
         KeySchema:
           - AttributeName: userId
